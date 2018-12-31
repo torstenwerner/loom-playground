@@ -23,14 +23,15 @@ public class Main {
     }
 
     private void run() {
-        final ServerSocket serverSocket;
+        final ServerSocketChannel serverChannel;
         try {
-            serverSocket = ServerSocketChannel.open().socket();
+            serverChannel = ServerSocketChannel.open();
+            ServerSocket serverSocket = serverChannel.socket();
             serverSocket.bind(new InetSocketAddress(7777), 1024);
         } catch (IOException e) {
             throw new RuntimeException("failed to start server", e);
         }
-        final Fiber<Void> serverFiber = Fiber.schedule(executor, () -> startServer(serverSocket.getChannel()));
+        final Fiber<Void> serverFiber = Fiber.schedule(executor, () -> startServer(serverChannel));
 
         IntStream.range(0, MAX_FIBERS)
                 .mapToObj(i -> Fiber.schedule(executor, this::startClient))
@@ -39,7 +40,8 @@ public class Main {
 
         serverFiber.cancel();
         try {
-            serverSocket.close();
+            serverChannel.close();
+            System.out.printf("closed server channel%n");
         } catch (IOException e) {
             throw new RuntimeException("failed to close server socket", e);
         }
