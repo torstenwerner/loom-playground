@@ -17,6 +17,7 @@ public class Main {
     private final int MAX_FIBERS = 64;
 
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+//    private final ExecutorService executor = ForkJoinPool.commonPool();
 
     public static void main(String[] args) {
         new Main().run();
