@@ -62,12 +62,13 @@ public class Main {
         try {
             final SocketAddress remoteAddress = clientChannel.getRemoteAddress();
             System.out.printf("will talk to client %s%n", remoteAddress);
-            final ByteBuffer byteBuffer = ByteBuffer.allocate(64);
+            final ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
             while (clientChannel.read(byteBuffer) > 0) {
                 System.out.printf("got %d bytes from client %s%n", byteBuffer.position(), remoteAddress);
                 byteBuffer.flip();
                 clientChannel.write(byteBuffer);
                 System.out.printf("sent to client %s%n", remoteAddress);
+                byteBuffer.clear();
             }
             clientChannel.close();
             System.out.printf("closed client %s%n", remoteAddress);
@@ -84,10 +85,9 @@ public class Main {
             channel.write(buffer);
             final SocketAddress localAddress = channel.getLocalAddress();
             System.out.printf("sent data to server from local address %s%n", localAddress);
-            buffer.flip();
-            while (channel.read(buffer) > 0) {
-                System.out.printf("read %d bytes from server from local address %s%n", buffer.position(), localAddress);
-            }
+            buffer.clear();
+            channel.read(buffer);
+            System.out.printf("read %d bytes from server from local address %s%n", buffer.position(), localAddress);
             channel.close();
             System.out.printf("closed server from local address %s%n", localAddress);
         } catch (IOException e) {
