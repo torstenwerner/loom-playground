@@ -1,4 +1,4 @@
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
@@ -10,7 +10,7 @@ public class Main {
 
     private final int MAX_FIBERS = 64;
 
-    private final Executor executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) {
         new Main().run();
@@ -21,6 +21,7 @@ public class Main {
                 .mapToObj(this::startFiber)
                 .collect(toList())
                 .forEach(Fiber::join);
+        executor.shutdown();
     }
 
     private Fiber startFiber(int id) {
