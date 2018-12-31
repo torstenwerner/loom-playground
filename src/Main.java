@@ -1,26 +1,35 @@
+import java.util.stream.IntStream;
+
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.currentThread;
+import static java.util.stream.Collectors.toList;
+
 public class Main {
 
-    public static void main(String[] args) {
+    private final static int MAX_FIBERS = 64;
 
-        final Fiber<Void> fiber01 = Fiber.schedule(() -> {
-            System.out.println("1st fiber before sleep");
-            sleep(1000);
-            System.out.println("1st fiber after sleep");
+    public static void main(String[] args) {
+        IntStream.range(0, MAX_FIBERS)
+                .mapToObj(Main::startFiber)
+                .collect(toList())
+                .forEach(Fiber::join);
+    }
+
+    private static Fiber startFiber(int id) {
+        final Fiber<Void> fiber = Fiber.schedule(() -> {
+            System.out.printf("fiber %d before sleep, time %d%n", id, currentTimeMillis());
+            sleep(100 * (MAX_FIBERS - id));
+            System.out.printf("fiber %d after sleep, time %d%n", id, currentTimeMillis());
         });
-        final Fiber<Void> fiber02 = Fiber.schedule(() -> {
-            System.out.println("2nd fiber before sleep");
-            sleep(500);
-            System.out.println("2nd fiber after sleep");
-        });
-        fiber01.join();
-        fiber02.join();
+        System.out.printf("fiber %d scheduled with name %s%n", id, fiber);
+        return fiber;
     }
 
     private static void sleep(int millis) {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            currentThread().interrupt();
         }
     }
 }
