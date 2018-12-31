@@ -1,3 +1,5 @@
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
 
 import static java.lang.System.currentTimeMillis;
@@ -7,6 +9,8 @@ import static java.util.stream.Collectors.toList;
 public class Main {
 
     private final int MAX_FIBERS = 64;
+
+    private final Executor executor = Executors.newSingleThreadExecutor();
 
     public static void main(String[] args) {
         new Main().run();
@@ -20,7 +24,7 @@ public class Main {
     }
 
     private Fiber startFiber(int id) {
-        final Fiber<Void> fiber = Fiber.schedule(() -> {
+        final Fiber<Void> fiber = Fiber.schedule(executor, () -> {
             System.out.printf("fiber %d before sleep, time %d%n", id, currentTimeMillis());
             sleep((MAX_FIBERS - id) * 100);
             System.out.printf("fiber %d after sleep, time %d%n", id, currentTimeMillis());
