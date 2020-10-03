@@ -5,6 +5,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.IntStream;
@@ -14,9 +15,9 @@ import static java.util.stream.Collectors.toList;
 
 public class Main {
 
-    private final int MAX_FIBERS = 64;
+    private final static int MAX_FIBERS = 64;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final ExecutorService executor = Executors.newVirtualThreadExecutor();
 //    private final ExecutorService executor = ForkJoinPool.commonPool();
 
     public static void main(String[] args) {
@@ -32,14 +33,14 @@ public class Main {
         } catch (IOException e) {
             throw new RuntimeException("failed to start server", e);
         }
-        final Fiber<Void> serverFiber = Fiber.schedule(executor, () -> startServer(serverChannel));
+        var serverFiber = executor.submitTask(() -> startServer(serverChannel));
 
         IntStream.range(0, MAX_FIBERS)
-                .mapToObj(i -> Fiber.schedule(executor, this::startClient))
+                .mapToObj(i -> executor.submitTask(this::startClient))
                 .collect(toList())
-                .forEach(Fiber::join);
+                .forEach(CompletableFuture::join);
 
-        serverFiber.cancel();
+        serverFiber.cancel(true);
         try {
             serverChannel.close();
             System.out.printf("closed server channel%n");
@@ -49,19 +50,19 @@ public class Main {
         executor.shutdown();
     }
 
-    private void startServer(ServerSocketChannel serverChannel) {
+    private Void startServer(ServerSocketChannel serverChannel) {
         try {
             while (true) {
                 final SocketChannel clientChannel = serverChannel.accept();
                 System.out.printf("accepted client %s%n", clientChannel.getRemoteAddress());
-                Fiber.schedule(executor, () -> talkToClient(clientChannel));
+                executor.submitTask(() -> talkToClient(clientChannel));
             }
         } catch (IOException e) {
             throw new RuntimeException("failed to accept from server socket", e);
         }
     }
 
-    private void talkToClient(SocketChannel clientChannel) {
+    private Void talkToClient(SocketChannel clientChannel) {
         try {
             final SocketAddress remoteAddress = clientChannel.getRemoteAddress();
             System.out.printf("will talk to client %s%n", remoteAddress);
@@ -75,12 +76,13 @@ public class Main {
             }
             clientChannel.close();
             System.out.printf("closed client %s%n", remoteAddress);
+            return null;
         } catch (IOException e) {
             throw new RuntimeException("failed to close client channel", e);
         }
     }
 
-    private void startClient() {
+    private Void startClient() {
         final InetSocketAddress socketAddress = new InetSocketAddress("localhost", 7777);
         try {
             final SocketChannel channel = SocketChannel.open(socketAddress);
@@ -93,6 +95,7 @@ public class Main {
             System.out.printf("read %d bytes from server from local address %s%n", buffer.position(), localAddress);
             channel.close();
             System.out.printf("closed server from local address %s%n", localAddress);
+            return null;
         } catch (IOException e) {
             throw new RuntimeException("failed to connect", e);
         }
