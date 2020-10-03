@@ -18,7 +18,6 @@ public class Main {
     private final static int MAX_FIBERS = 64;
 
     private final ExecutorService executor = Executors.newVirtualThreadExecutor();
-//    private final ExecutorService executor = ForkJoinPool.commonPool();
 
     public static void main(String[] args) {
         new Main().run();
@@ -53,7 +52,7 @@ public class Main {
     private Void startServer(ServerSocketChannel serverChannel) {
         try {
             while (true) {
-                final SocketChannel clientChannel = serverChannel.accept();
+                var clientChannel = serverChannel.accept();
                 System.out.printf("accepted client %s%n", clientChannel.getRemoteAddress());
                 executor.submitTask(() -> talkToClient(clientChannel));
             }
@@ -64,9 +63,9 @@ public class Main {
 
     private Void talkToClient(SocketChannel clientChannel) {
         try {
-            final SocketAddress remoteAddress = clientChannel.getRemoteAddress();
+            var remoteAddress = clientChannel.getRemoteAddress();
             System.out.printf("will talk to client %s%n", remoteAddress);
-            final ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+            var byteBuffer = ByteBuffer.allocate(1024);
             while (clientChannel.read(byteBuffer) > 0) {
                 System.out.printf("got %d bytes from client %s%n", byteBuffer.position(), remoteAddress);
                 byteBuffer.flip();
@@ -83,12 +82,12 @@ public class Main {
     }
 
     private Void startClient() {
-        final InetSocketAddress socketAddress = new InetSocketAddress("localhost", 7777);
+        var socketAddress = new InetSocketAddress("localhost", 7777);
         try {
-            final SocketChannel channel = SocketChannel.open(socketAddress);
-            final ByteBuffer buffer = ByteBuffer.wrap("Hello World!".getBytes(UTF_8));
+            var channel = SocketChannel.open(socketAddress);
+            var buffer = ByteBuffer.wrap("Hello World!".getBytes(UTF_8));
             channel.write(buffer);
-            final SocketAddress localAddress = channel.getLocalAddress();
+            var localAddress = channel.getLocalAddress();
             System.out.printf("sent data to server from local address %s%n", localAddress);
             buffer.clear();
             channel.read(buffer);
